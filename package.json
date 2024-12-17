@@ -12,6 +12,7 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "core-js": "^3.39.0",
+    "fractional": "^1.0.0",
     "parcel": "^2.13.2",
     "regenerator-runtime": "^0.14.1",
     "sass": "^1.82.0"
