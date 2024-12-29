@@ -4,19 +4,22 @@ import {Fraction} from 'fractional';
 class RecipeView {
     #parentElement = document.querySelector('.recipe');
     #data;
-
+    #errorMessage = "We could not find that Recipe. Please try another one!";
+    #message = '';
+    
     render(data) {
         this.#data = data;
         const markup = this.#generateMarkup();
         this.#clear();
         this.#parentElement.insertAdjacentHTML('afterbegin', markup);
     }
-
+/* A private method to clear Parent elements (i.e. setting the innerHTML to blank)*/
 #clear() {
     this.#parentElement.innerHTML = '';
 }
 
-renderSpinner = function () {
+/* A function to render a loading spinner */
+renderSpinner () {
     const markup = `
       <div class="spinner">
             <svg>
@@ -24,10 +27,49 @@ renderSpinner = function () {
             </svg>
           </div>
     `;
-    this.#parentElement.innerHTML = '';
+    this.#clear();
     this.#parentElement.insertAdjacentHTML('afterbegin', markup);
   }
 
+/* Error Message */
+renderError(message = this.#errorMessage) {
+  const markup = `
+    <div class="error">
+            <div>
+              <svg>
+                <use href="${icons}#icon-alert-triangle"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+  `
+  this.#clear();
+  this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+}
+
+/* Success Message */
+renderMessage(message = this.#message) {
+  const markup = `
+    <div class="message">
+            <div>
+              <svg>
+                <use href="${icons}#icon-smile"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+  `
+  this.#clear();
+  this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+}
+
+/* Adding Event Listeners for Each Event of hashchange and Load */
+addHandlerRender(handler) {
+  const browserEvents = ['hashchange', 'load'];
+  browserEvents.forEach(ev => window.addEventListener(ev, handler));
+}
+
+/* Generating HTML Markup for Each Recipe */
 #generateMarkup() {
     return `
         <figure class="recipe__fig">
@@ -106,6 +148,7 @@ renderSpinner = function () {
     `;
 }
 
+/* Generating HTML Markup For Each Recipe Ingredients */
 #generateMarkupIngredient(ing) {
     return `
     <li class="recipe__ingredient">

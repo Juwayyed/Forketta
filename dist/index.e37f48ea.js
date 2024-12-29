@@ -616,14 +616,21 @@ const controlRecipes = async function() {
         // 2) Rendering Recipe
         (0, _recipeViewJsDefault.default).render(_modelJs.state.recipe);
     } catch (err) {
-        alert(err);
+        (0, _recipeViewJsDefault.default).renderError();
     }
 };
-const browserEvents = [
-    'hashchange',
-    'load'
-];
-browserEvents.forEach((ev)=>window.addEventListener(ev, controlRecipes));
+const controlSearchResults = async function() {
+    try {
+        await _modelJs.loadSearchResults('pizza');
+        console.log(_modelJs.state.search.results);
+    } catch (err) {
+        console.log(err);
+    }
+};
+const init = function() {
+    (0, _recipeViewJsDefault.default).addHandlerRender(controlRecipes);
+};
+init();
 
 },{"core-js/modules/web.immediate.js":"49tUX","./model.js":"Y4A21","./views/recipeView.js":"l60JC","regenerator-runtime/runtime":"dXNgZ","./model":"Y4A21","@parcel/transformer-js/src/esmodule-helpers.js":"9FYyo"}],"49tUX":[function(require,module,exports,__globalThis) {
 'use strict';
@@ -1881,15 +1888,20 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "state", ()=>state);
 parcelHelpers.export(exports, "loadRecipe", ()=>loadRecipe);
+parcelHelpers.export(exports, "loadSearchResults", ()=>loadSearchResults);
 var _regeneratorRuntime = require("regenerator-runtime");
 var _config = require("./config");
 var _helpers = require("./helpers");
 const state = {
-    recipe: {}
+    recipe: {},
+    search: {
+        query: '',
+        results: []
+    }
 };
 const loadRecipe = async function(id) {
     try {
-        const data = await (0, _helpers.getJSON)(`${(0, _config.API_URL)}/${id}`);
+        const data = await (0, _helpers.getJSON)(`${(0, _config.API_URL)}${id}`);
         const { recipe } = data.data;
         state.recipe = {
             id: recipe.id,
@@ -1901,9 +1913,25 @@ const loadRecipe = async function(id) {
             cookingTime: recipe.cooking_time,
             ingredients: recipe.ingredients
         };
-        console.log(state.recipe);
     } catch (err) {
-        console.error(`${err} :) :)`);
+        console.error(`${err}`);
+        throw err;
+    }
+};
+const loadSearchResults = async function(query) {
+    try {
+        const data = await (0, _helpers.getJSON)(`${(0, _config.API_URL)}?search=${query}`);
+        console.log(data);
+        state.search.results = data.data.recipes.map((rec)=>{
+            return {
+                id: rec.id,
+                title: rec.title,
+                publisher: rec.publisher,
+                image: rec.image_url
+            };
+        });
+    } catch (err) {
+        throw err;
     }
 };
 
@@ -2497,7 +2525,7 @@ var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "API_URL", ()=>API_URL);
 parcelHelpers.export(exports, "TIMEOUT_SEC", ()=>TIMEOUT_SEC);
-const API_URL = 'https://forkify-api.herokuapp.com/api/v2/recipes';
+const API_URL = 'https://forkify-api.herokuapp.com/api/v2/recipes/';
 const TIMEOUT_SEC = 10;
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"9FYyo"}],"9FYyo":[function(require,module,exports,__globalThis) {
@@ -2545,9 +2573,10 @@ const timeout = function(s) {
 };
 const getJSON = async function(URL) {
     try {
+        fetchPro = fetch(URL);
         const res = await Promise.race([
-            fetch(URL),
-            timeout(10)
+            fetchPro,
+            timeout((0, _config.TIMEOUT_SEC))
         ]);
         const data = await res.json();
         if (!res.ok) throw new Error(`${data.message} (${res.status})`);
@@ -2566,16 +2595,18 @@ var _fractional = require("fractional");
 class RecipeView {
     #parentElement = document.querySelector('.recipe');
     #data;
+    #errorMessage = "We could not find that Recipe. Please try another one!";
+    #message = '';
     render(data) {
         this.#data = data;
         const markup = this.#generateMarkup();
         this.#clear();
         this.#parentElement.insertAdjacentHTML('afterbegin', markup);
     }
-    #clear() {
+    /* A private method to clear Parent elements (i.e. setting the innerHTML to blank)*/ #clear() {
         this.#parentElement.innerHTML = '';
     }
-    renderSpinner = function() {
+    /* A function to render a loading spinner */ renderSpinner() {
         const markup = `
       <div class="spinner">
             <svg>
@@ -2583,10 +2614,45 @@ class RecipeView {
             </svg>
           </div>
     `;
-        this.#parentElement.innerHTML = '';
+        this.#clear();
         this.#parentElement.insertAdjacentHTML('afterbegin', markup);
-    };
-    #generateMarkup() {
+    }
+    /* Error Message */ renderError(message = this.#errorMessage) {
+        const markup = `
+    <div class="error">
+            <div>
+              <svg>
+                <use href="${(0, _iconsSvgDefault.default)}#icon-alert-triangle"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+  `;
+        this.#clear();
+        this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+    /* Success Message */ renderMessage(message = this.#message) {
+        const markup = `
+    <div class="message">
+            <div>
+              <svg>
+                <use href="${(0, _iconsSvgDefault.default)}#icon-smile"></use>
+              </svg>
+            </div>
+            <p>${message}</p>
+          </div>
+  `;
+        this.#clear();
+        this.#parentElement.insertAdjacentHTML('afterbegin', markup);
+    }
+    /* Adding Event Listeners for Each Event of hashchange and Load */ addHandlerRender(handler) {
+        const browserEvents = [
+            'hashchange',
+            'load'
+        ];
+        browserEvents.forEach((ev)=>window.addEventListener(ev, handler));
+    }
+    /* Generating HTML Markup for Each Recipe */ #generateMarkup() {
         return `
         <figure class="recipe__fig">
           <img src="${this.#data.image}" alt="${this.#data.title}" class="recipe__img" />
@@ -2663,7 +2729,7 @@ class RecipeView {
         </div>
     `;
     }
-    #generateMarkupIngredient(ing) {
+    /* Generating HTML Markup For Each Recipe Ingredients */ #generateMarkupIngredient(ing) {
         return `
     <li class="recipe__ingredient">
     <svg class="recipe__icon">

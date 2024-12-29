@@ -3,6 +3,7 @@ import RecipeView from './views/recipeView.js';
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 import { loadRecipe } from './model';
+import recipeView from './views/recipeView.js';
 
 const recipeContainer = document.querySelector('.recipe');
 
@@ -24,9 +25,21 @@ const controlRecipes = async function () {
 
   } 
   catch(err) {
-    alert(err);
+    recipeView.renderError();
   }
 }
 
-const browserEvents = ['hashchange', 'load'];
-browserEvents.forEach(ev => window.addEventListener(ev, controlRecipes));
+const controlSearchResults = async function () {
+  try {
+    await model.loadSearchResults('pizza');
+    console.log(model.state.search.results);
+  } catch (err) {
+    console.log(err);
+  }
+}
+
+const init = function() {
+  recipeView.addHandlerRender(controlRecipes);
+}
+init();
+
